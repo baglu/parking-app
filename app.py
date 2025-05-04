@@ -22,6 +22,7 @@ def home():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    app.logger.info("POST request received for /analyze")
     if 'image' not in request.files:
         return {'error': 'No image uploaded'}, 400
 
