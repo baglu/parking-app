@@ -2,8 +2,6 @@ services:
   - type: web
     name: parking-app
     env: python
-    buildCommand: ""
+    buildCommand: pip install -r requirements.txt
     startCommand: python app.py
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.10
+    runtime: python3
