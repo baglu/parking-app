@@ -1,6 +1,6 @@
 from flask import Flask, request, send_file
 from flask_cors import CORS
-
+from flask import render_template
 import os
 import cv2
 from ultralytics import YOLO
@@ -18,7 +18,7 @@ model = YOLO("yolov8m.pt")  # 'n' = nano (lightest model)
 
 @app.route('/')
 def home():
-    return '🚗 YOLO Parking Detection is Running!'
+    return render_template('index.html')
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
