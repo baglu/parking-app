@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parking Space Detection</title>
+</head>
+<body>
+    <h1>🚗 Upload Parking Image</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="image" id="imageInput" required>
+        <button type="submit">Upload</button>
+    </form>
+
+    <h2>📸 Result:</h2>
+    <img id="resultImage" src="" alt="Result will appear here" style="max-width:600px; margin-top:20px;">
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const response = await fetch('http://127.0.0.1:5000/analyze', {
+                method: 'POST',
+                body: formData
+            });
+            const blob = await response.blob();
+            document.getElementById('resultImage').src = URL.createObjectURL(blob);
+        });
+    </script>
+</body>
+</html>
