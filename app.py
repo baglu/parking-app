@@ -23,20 +23,24 @@ def home():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    try:
+        print("Received POST request")
     if 'image' not in request.files:
         return {'error': 'No image uploaded'}, 400
 
     image = request.files['image']
     image_path = os.path.join(UPLOAD_FOLDER, image.filename)
     image.save(image_path)
+    print("Image saved to", image_path)
 
     # Run YOLO on image
     results = model(image_path)[0]
+    print("Model inference completed")
     print("DETECTIONS:", results.boxes)
 
     # Load image with OpenCV
     img = cv2.imread(image_path)
-
+    print("Image loaded with OpenCV")
     # Loop over detected objects
     for box in results.boxes:
         cls_id = int(box.cls[0])
