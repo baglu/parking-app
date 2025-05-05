@@ -1,6 +1,5 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, render_template
 from flask_cors import CORS
-from flask import render_template
 import os
 import cv2
 from ultralytics import YOLO
@@ -13,9 +12,9 @@ RESULT_FOLDER = 'results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-# Load pre-trained YOLOv8 model
-model = YOLO("yolov8m.pt")  # 'n' = nano (lightest model)
-print("App started")
+# Load YOLO model
+model = YOLO("yolov8m.pt")
+print("App started and model loaded")
 
 @app.route('/')
 def home():
@@ -23,45 +22,47 @@ def home():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    try:
-        print("Received POST request")
+    print("Received POST request")
+
     if 'image' not in request.files:
+        print("No image found in request")
         return {'error': 'No image uploaded'}, 400
 
-    image = request.files['image']
-    image_path = os.path.join(UPLOAD_FOLDER, image.filename)
-    image.save(image_path)
-    print("Image saved to", image_path)
+    try:
+        image = request.files['image']
+        image_path = os.path.join(UPLOAD_FOLDER, image.filename)
+        image.save(image_path)
+        print("Image saved to", image_path)
 
-    # Run YOLO on image
-    results = model(image_path)[0]
-    print("Model inference completed")
-    print("DETECTIONS:", results.boxes)
+        # Run YOLO on image
+        results = model(image_path)[0]
+        print("Model inference completed")
 
-    # Load image with OpenCV
-    img = cv2.imread(image_path)
-    print("Image loaded with OpenCV")
-    # Loop over detected objects
-    for box in results.boxes:
-        cls_id = int(box.cls[0])
-        label = results.names[cls_id]
-        print("Detected:", label)
+        # Load image with OpenCV
+        img = cv2.imread(image_path)
+        print("Image loaded with OpenCV")
 
-        if label == 'car':
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
-            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 2)  # Red box
-            cv2.putText(img, 'Car', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        for box in results.boxes:
+            cls_id = int(box.cls[0])
+            label = results.names[cls_id]
+            print("Detected:", label)
 
-    # Save result image
-    result_path = os.path.join(RESULT_FOLDER, 'result_' + image.filename)
-    cv2.imwrite(result_path, img)
+            if label == 'car':
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                cv2.putText(img, 'Car', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-    print(f"Returning file: {result_path}")
+        # Save result image
+        result_path = os.path.join(RESULT_FOLDER, 'result_' + image.filename)
+        cv2.imwrite(result_path, img)
+        print("Saved result to", result_path)
 
-    return send_file(result_path, mimetype='image/jpeg')
+        return send_file(result_path, mimetype='image/jpeg')
 
-import os
+    except Exception as e:
+        print("Error during analysis:", str(e))
+        return {'error': str(e)}, 500
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))  # Use Render's PORT or default to 5000
+    port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-
