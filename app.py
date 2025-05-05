@@ -15,6 +15,7 @@ os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # Load pre-trained YOLOv8 model
 model = YOLO("yolov8m.pt")  # 'n' = nano (lightest model)
+print("App started")
 
 @app.route('/')
 def home():
