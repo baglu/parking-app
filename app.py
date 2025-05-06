@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, render_template
+from flask import Flask, request, send_file, render_template, url_for
 from flask_cors import CORS
 import os
 import cv2
@@ -7,8 +7,8 @@ from ultralytics import YOLO
 app = Flask(__name__)
 CORS(app)
 
-UPLOAD_FOLDER = 'uploads'
-RESULT_FOLDER = 'results'
+UPLOAD_FOLDER = 'static/uploads'
+RESULT_FOLDER = 'static/results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
@@ -30,16 +30,20 @@ def analyze():
 
     try:
         image = request.files['image']
-        image_path = os.path.join(UPLOAD_FOLDER, image.filename)
-        image.save(image_path)
-        print("Image saved to", image_path)
+        filename = image.filename
+        upload_path = os.path.join(UPLOAD_FOLDER, filename)
+        result_path = os.path.join(RESULT_FOLDER, 'result_' + filename)
+
+        # Save uploaded image
+        image.save(upload_path)
+        print("Image saved to", upload_path)
 
         # Run YOLO on image
-        results = model(image_path)[0]
+        results = model(upload_path)[0]
         print("Model inference completed")
 
         # Load image with OpenCV
-        img = cv2.imread(image_path)
+        img = cv2.imread(upload_path)
         print("Image loaded with OpenCV")
 
         for box in results.boxes:
@@ -53,11 +57,16 @@ def analyze():
                 cv2.putText(img, 'Car', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
         # Save result image
-        result_path = os.path.join(RESULT_FOLDER, 'result_' + image.filename)
         cv2.imwrite(result_path, img)
         print("Saved result to", result_path)
 
-        return send_file(result_path, mimetype='image/jpeg')
+        # URLs to display on the web page
+        uploaded_image_url = url_for('static', filename='uploads/' + filename)
+        result_image_url = url_for('static', filename='results/result_' + filename)
+
+        return render_template('index.html',
+                               uploaded_image=uploaded_image_url,
+                               result_image=result_image_url)
 
     except Exception as e:
         print("Error during analysis:", str(e))
